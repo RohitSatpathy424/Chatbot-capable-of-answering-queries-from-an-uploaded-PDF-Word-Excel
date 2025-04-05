@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-6 bg-white rounded-lg shadow">
+        <h1 class="text-xl font-bold text-center mb-4">PDF Chatbot</h1>
+        
+        <input type="file" id="pdfUpload" accept=".pdf" class="w-full mb-2 p-2 border rounded">
+        <button onclick="uploadPDF()" class="w-full bg-blue-600 text-white py-2 rounded">Upload</button>
+        
+        <div id="documentText" class="hidden mt-4">
+            <h2 class="text-sm font-semibold">Extracted Text:</h2>
+            <pre id="extractedText" class="p-2 bg-gray-100 border rounded max-h-40 overflow-auto"></pre>
+        </div>
+        
+        <input type="text" id="queryInput" placeholder="Ask a question..." class="w-full mt-4 p-2 border rounded">
+        <button onclick="queryDocument()" class="w-full mt-2 bg-green-600 text-white py-2 rounded">Ask</button>
+        
+        <div id="answer" class="hidden mt-4">
+            <h2 class="text-sm font-semibold">Answer:</h2>
+            <div id="answerText" class="p-2 bg-gray-100 border rounded"></div>
+        </div>
+    </div>
+
+    <script>
+        let documentText = '';
+
+        function uploadPDF() {
+            const file = document.getElementById('pdfUpload').files[0];
+            if (!file) return alert('Select a PDF');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/upload', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.text) {
+                    documentText = data.text;
+                    document.getElementById('extractedText').textContent = documentText;
+                    document.getElementById('documentText').classList.remove('hidden');
+                }
+            })
+            .catch(() => alert('Upload failed'));
+        }
+
+        function queryDocument() {
+            const query = document.getElementById('queryInput').value;
+            if (!documentText) return alert('Upload a document first');
+
+            fetch('/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, document_text: documentText })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('answerText').textContent = data.choices[0].message.content;
+                document.getElementById('answer').classList.remove('hidden');
+            })
+            .catch(() => alert('Query failed'));
+        }
+    </script>
+</body>
+</html>
